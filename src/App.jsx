@@ -7,6 +7,7 @@ function useInterval(callback, delay) {
   useEffect(() => {
     savedCallback.current = callback;
   }, [callback]);
+
   useEffect(() => {
     function tick() {
       savedCallback.current();
@@ -17,22 +18,40 @@ function useInterval(callback, delay) {
     }
   }, [delay]);
 }
+
 function App() {
   const [bitcoinPrice, setBitcoinPrice] = useState(null);
+  const [delay, setDelay] = useState(1000);
 
   useInterval(() => {
     fetch("https://blockchain.info/ticker")
       .then((response) => response.json())
-      .then((data) => setBitcoinPrice(data.EUR.last))
+      .then((data) => {
+        console.log("Nouveau prix:", data.EUR.last);
+        setBitcoinPrice(data.EUR.last);
+      })
       .catch((error) =>
         console.error("Erreur lors de la récupération des données:", error)
       );
-  }, [1000]);
-  console.log("Prix actualisé");
+  }, delay);
+
   return (
     <div>
       <h1>Prix du Bitcoin</h1>
       {bitcoinPrice ? <p>{bitcoinPrice} EUR</p> : <p>Chargement...</p>}
+
+      <div>
+        <label>
+          Fréquence de mise à jour : {delay} ms
+          <input
+            type="range"
+            min="100"
+            max="10000"
+            value={delay}
+            onChange={(e) => setDelay(Number(e.target.value))}
+          />
+        </label>
+      </div>
     </div>
   );
 }
