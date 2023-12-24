@@ -1,57 +1,39 @@
-import { useState, useEffect, useRef } from "react";
-import "./App.css";
-
-function useInterval(callback, delay) {
-  const savedCallback = useRef();
-
-  useEffect(() => {
-    savedCallback.current = callback;
-  }, [callback]);
-
-  useEffect(() => {
-    function tick() {
-      savedCallback.current();
-    }
-    if (delay !== null) {
-      let id = setInterval(tick, delay);
-      return () => clearInterval(id);
-    }
-  }, [delay]);
-}
+import React, { useState, useEffect } from "react";
 
 function App() {
   const [bitcoinPrice, setBitcoinPrice] = useState(null);
-  const [delay, setDelay] = useState(1000);
+  const [lastPrice, setLastPrice] = useState(null);
 
-  useInterval(() => {
-    fetch("https://blockchain.info/ticker")
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Nouveau prix:", data.EUR.last);
-        setBitcoinPrice(data.EUR.last);
-      })
-      .catch((error) =>
-        console.error("Erreur lors de la récupération des données:", error)
-      );
-  }, delay);
+  useEffect(() => {
+    const fetchPrice = () => {
+      fetch("https://blockchain.info/ticker")
+        .then((response) => response.json())
+        .then((data) => {
+          const newPrice = data.EUR.last;
+          if (newPrice !== lastPrice) {
+            setBitcoinPrice(newPrice);
+            setLastPrice(newPrice);
+            console.log("nouveaux prix", newPrice);
+          }
+        })
+        .catch((error) =>
+          console.error("Erreur lors de la récupération des données:", error)
+        );
+    };
+
+    fetchPrice();
+    const intervalId = setInterval(fetchPrice, 30000);
+    return () => clearInterval(intervalId);
+  }, [lastPrice]);
 
   return (
     <div>
       <h1>Prix du Bitcoin</h1>
-      {bitcoinPrice ? <p>{bitcoinPrice} EUR</p> : <p>Chargement...</p>}
-
-      <div>
-        <label>
-          Fréquence de mise à jour : {delay} ms
-          <input
-            type="range"
-            min="100"
-            max="10000"
-            value={delay}
-            onChange={(e) => setDelay(Number(e.target.value))}
-          />
-        </label>
-      </div>
+      {bitcoinPrice !== null ? (
+        <p>Prix actuel : {bitcoinPrice} EUR</p>
+      ) : (
+        <p>Chargement...</p>
+      )}
     </div>
   );
 }
